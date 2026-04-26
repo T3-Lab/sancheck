@@ -3,6 +3,9 @@ README_SANCHECK.md
 pyproject.toml
 SanCheck/__init__.py
 SanCheck/__main__.py
+SanCheck/_check_func.py
+SanCheck/_helper.py
+SanCheck/_plotting.py
 SanCheck/core.py
 sancheck.egg-info/PKG-INFO
 sancheck.egg-info/SOURCES.txt

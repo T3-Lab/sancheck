@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sancheck
-Version: 0.1.1
+Version: 0.1.2
 Summary: Minimal-tuning CLI tool for data stats and clarity checks
 Author: Nexo-kun
 License: MIT
@@ -29,7 +29,7 @@ It provides a fast, high-level overview before deeper analysis or modeling.
 Run the tool on a CSV file:
 
 ```bash
-sancheck [csv_data] [n_feature_per_plot or 'all']
+sancheck [csv_dir] [target_column_name] [n_feature_per_plot or 'all']
 ```
 
 ## Example output
@@ -58,18 +58,7 @@ sancheck [csv_data] [n_feature_per_plot or 'all']
   - English_Score: bad_type=0 (0.000)
   - Previous_Year_Score: bad_type=0 (0.000)
   - Final_Percentage: bad_type=0 (0.000)
-- Similar feature pairs (|corr| >= 0.95):
-  - Severity similarity: 0.000
-  - English_Score <-> Final_Percentage: |corr|=0.592
-  - Science_Score <-> Final_Percentage: |corr|=0.572
-  - Math_Score <-> Final_Percentage: |corr|=0.564
-  - Study_Hours_Per_Day <-> Science_Score: |corr|=0.038
-  - Class <-> Attendance_Percentage: |corr|=0.035
-  - Study_Hours_Per_Day <-> Attendance_Percentage: |corr|=0.027
-  - Class <-> Math_Score: |corr|=0.021
-  - Math_Score <-> Science_Score: |corr|=0.020
-  - Study_Hours_Per_Day <-> Previous_Year_Score: |corr|=0.020
-  - Age <-> Attendance_Percentage: |corr|=0.019
+- Similar feature pairs: none
 
 📌 Row problems
 - Problematic rows (NaN/Inf): 0/5000
@@ -98,20 +87,37 @@ sancheck [csv_data] [n_feature_per_plot or 'all']
   - Science_Score: spread_score=0.380 (moderate / moderate variation), var=366.385, iqr=33.000
   - Previous_Year_Score: spread_score=0.377 (moderate / moderate variation), var=261.065, iqr=28.000
 
-📌 Normality (per fitur)
-- Age: Shapiro=0.000 | KS=0.000
-- Class: Shapiro=0.000 | KS=0.000
-- Study_Hours_Per_Day: Shapiro=0.000 | KS=0.000
-- Attendance_Percentage: Shapiro=0.000 | KS=0.000
-- Math_Score: Shapiro=0.000 | KS=0.000
-- Science_Score: Shapiro=0.000 | KS=0.000
-- English_Score: Shapiro=0.000 | KS=0.000
-- Previous_Year_Score: Shapiro=0.000 | KS=0.000
-- Final_Percentage: Shapiro=0.000 | KS=0.038
+📌 Structure
+- VIF mean (normalized): 0.000
+- VIF per-feature
+  - Age: VIF=62.762
+  - Class: VIF=58.647
+  - Study_Hours_Per_Day: VIF=5.229
+  - Attendance_Percentage: VIF=24.408
+  - Math_Score: VIF=73695901.084
+  - Science_Score: VIF=72203502.298
+  - English_Score: VIF=74047280.603
+  - Previous_Year_Score: VIF=17.149
+  - Final_Percentage: VIF=627307333.939
+- sparsity: 0.001
+- class override ratio: 1.000
 
-🔨 Final status
-- clarity score: 0.961 / 1.000
-- clarity label: very clean
+📌 Normality
+- Shapiro-wilk and KS test score per-feature:
+  - Age: Shapiro=0.000 | KS=0.000
+  - Class: Shapiro=0.000 | KS=0.000
+  - Study_Hours_Per_Day: Shapiro=0.000 | KS=0.000
+  - Attendance_Percentage: Shapiro=0.000 | KS=0.000
+  - Math_Score: Shapiro=0.000 | KS=0.000
+  - Science_Score: Shapiro=0.000 | KS=0.000
+  - English_Score: Shapiro=0.000 | KS=0.000
+  - Previous_Year_Score: Shapiro=0.000 | KS=0.000
+  - Final_Percentage: Shapiro=0.000 | KS=0.038
+- normality score (based on skewness and kurtosis): 0.884
+
+🧼 Cleanineess status
+- cleanliness score: 0.961 / 1.000
+- cleanliness label: very clean
 - missing severity: 0.000
 - type severity: 0.000
 - similarity severity: 0.000
