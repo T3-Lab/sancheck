@@ -4,7 +4,7 @@ import numpy as np
 from . import _check_func as Check
 import pandas as pd
 
-def plot_numeric_boxplot(df: pd.DataFrame, numeric_cols: list[str], title_suffix: str = ""):
+def plot_numeric_boxplot(df: pd.DataFrame, numeric_cols: list[str], title_suffix: str = "", download_plot: bool = False):
     if not numeric_cols:
         print("⚠️ No valid numeric columns for boxplot.")
         return
@@ -23,18 +23,19 @@ def plot_numeric_boxplot(df: pd.DataFrame, numeric_cols: list[str], title_suffix
     plt.xlabel("Value")
     plt.ylabel("Column")
     plt.tight_layout()
+    if download_plot:
+      plt.savefig(f"boxplot_numeric_columns{title_suffix.replace(' ', '_')}.png", dpi=300) if download_plot else None
     plt.show()
 
-
-def plot_numeric_heatmap(df: pd.DataFrame, numeric_cols: list[str], title_suffix: str = ""):
+def plot_numeric_heatmap(df: pd.DataFrame, numeric_cols: list[str], title_suffix: str = "", download_plot: bool = False):
     if len(numeric_cols) < 2:
         print("⚠️ Heatmap requires at least 2 numeric columns.")
         return
 
     numeric = df[numeric_cols].apply(pd.to_numeric, errors="coerce")
-    corr = numeric.corr()
+    corr = numeric.corr().fillna(0)
 
-    mask = np.triu(np.ones_like(corr, dtype=bool))
+    mask = np.triu(np.ones_like(corr, dtype=bool), k=1)
     annot = len(numeric_cols) <= 12
 
     fig_size = max(8, 0.55 * len(numeric_cols) + 4)
@@ -56,17 +57,18 @@ def plot_numeric_heatmap(df: pd.DataFrame, numeric_cols: list[str], title_suffix
     plt.xticks(rotation=45, ha="right")
     plt.yticks(rotation=0)
     plt.tight_layout()
+    if download_plot:
+      plt.savefig(f"heatmap_correlation{title_suffix.replace(' ', '_')}.png", dpi=300)
     plt.show()
 
-
-def plots(df: pd.DataFrame, n_slice):
+def plots(df: pd.DataFrame, n_slice: int, download_plot: bool = False):
     if df.empty:
         print("⚠️ No data available for plotting.")
         return
 
     if n_slice == "all":
-        plot_numeric_boxplot(df, list(df.columns), title_suffix="(all features)")
-        plot_numeric_heatmap(df, list(df.columns), title_suffix="(all features)")
+        plot_numeric_boxplot(df, list(df.columns), title_suffix="(all features)", download_plot=download_plot)
+        plot_numeric_heatmap(df, list(df.columns), title_suffix="(all features)", download_plot=download_plot)
         return
 
     n_slice = int(n_slice)
@@ -76,5 +78,5 @@ def plots(df: pd.DataFrame, n_slice):
         chunk_cols = cols[start:start + n_slice]
         chunk_df = df[chunk_cols]
         title_suffix = f"(features {start + 1}-{start + len(chunk_cols)})"
-        plot_numeric_boxplot(chunk_df, chunk_cols, title_suffix=title_suffix)
-        plot_numeric_heatmap(chunk_df, chunk_cols, title_suffix=title_suffix)
+        plot_numeric_boxplot(chunk_df, chunk_cols, title_suffix=title_suffix, download_plot=download_plot)
+        plot_numeric_heatmap(chunk_df, chunk_cols, title_suffix=title_suffix, download_plot=download_plot)

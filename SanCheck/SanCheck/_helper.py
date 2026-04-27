@@ -38,11 +38,30 @@ def _to_numeric_with_mask(series: pd.Series):
     return coerced, finite_mask, nan_mask, bad_parse_mask
 
 
-def _label_from_score(score: float) -> str:
-    if score < 0.25:
-        return "low"
-    if score < 0.50:
-        return "medium"
-    if score < 0.75:
-        return "high"
-    return "very high"
+def _label_from_score(score: float, toplow=False) -> str:
+    if toplow:
+        if score >= 0.75:
+            return "[green]very high[/green]"
+        if score >= 0.50:
+            return "[yellow]high[/yellow]"
+        if score >= 0.25:
+            return "[orange1]low[/orange1]"
+        return "[red]very low[/red]"
+    
+    else:
+        if score < 0.25:
+            return "[green]low[/green]"
+        if score < 0.50:
+            return "[yellow]medium[/yellow]"
+        if score < 0.75:
+            return "[orange1]high[/orange1]"
+        return "[red]very high[/red]"
+    
+class InfoAction(argparse.Action):
+    def __init__(self, option_strings, dest, nargs=0, **kwargs):
+        super().__init__(option_strings, dest, nargs=nargs, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        from . import _info as Info
+        Info.metrics()
+        parser.exit()

@@ -1,6 +1,7 @@
 from . import _helper as Help
 from . import _check_func as Check
 from . import _plotting as PLT
+from . import _info as Info
 
 import argparse
 import sys
@@ -8,6 +9,9 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
+import time
+
+from rich import print
 
 # =============================
 # Configuration
@@ -47,12 +51,12 @@ class CleanlinessBreakdown:
     def label(self) -> str:
         score = self.overall
         if score >= 0.85:
-            return "very clean"
+            return "[green]very clean[/green]"
         if score >= 0.70:
-            return "fairly clean"
+            return "[yellow]fairly clean[/yellow]"
         if score >= 0.50:
-            return "some issues"
-        return "dirty"
+            return "[orange1]some issues[/orange1]"
+        return "[red]dirty[/red]"
 
 
 def cleanliness_breakdown(
@@ -83,16 +87,41 @@ def cleanliness_breakdown(
 # CLI
 # =============================
 def main():
+    elapsed = time.time()
     parser = argparse.ArgumentParser(
         description="SanCheck — data sanity checker"
     )
-    parser.add_argument("csv", help="Path to CSV file")
-    parser.add_argument("target", help="Target column name")
+    parser.add_argument("csv", 
+                        help="Path to CSV file")
+    
+    parser.add_argument("target", 
+                        help="Target column name (classification only)")
+    
     parser.add_argument(
         "slice",
         type=Help.parse_slice_arg,
         help="Number of columns per chunk for plotting, or 'all'",
     )
+    
+    parser.add_argument(
+        "--download-plot",
+        action="store_true",
+        help="Download plots as PNG files",
+    )
+
+    parser.add_argument(
+        "--no-plot",
+        action="store_true",
+        help="Skip plotting (overrides --download-plot)",
+    )
+
+    parser.add_argument(
+        "--metrics-info",
+        action=Help.InfoAction,
+        help="Show detailed explanation of metrics",
+        nargs=0
+    )
+    
     args = parser.parse_args()
 
     try:
@@ -128,10 +157,12 @@ def main():
     cleanliness = cleanliness_breakdown(df, nan_inf_df, type_df, sim_severity, row_severity)
     sparsity = Check.sparsity_ratio(df, numeric_cols)
     vif = Check.compute_vif(df, numeric_cols)
-    override_rat = 1 - Check.class_override_ratio(df, numeric_cols, target)
+    override_rat = Check.class_override_ratio(df, numeric_cols, target)
+    imbalance_rat = Check.class_imbalance_ratio(df, target)
 
     # plotting
-    PLT.plots(df[numeric_cols], args.slice)
+    if not args.no_plot:
+        PLT.plots(df, n_slice=args.slice, download_plot=args.download_plot)
 
     # normality
     shapiro = {c: Check.shapiro_per_feature(df[c]) for c in numeric_cols}
@@ -141,12 +172,13 @@ def main():
     top_entropy = dist_df.sort_values("entropy", ascending=False).head(5)
     top_spread = dist_df.sort_values("spread_score", ascending=False).head(5)
     top_rows = row_df.head(5)
-
-    print("\n📌 Summary of columns")
+    
+    # Colorting
+    print("\n[bold cyan]📊 Dataset Summary[/bold cyan]")
     print(f"- Valid numeric columns: {len(numeric_cols)}")
     print(f"- Ignored non-numeric columns: {len(ignored_cols)}")
 
-    print("\n📌 Column problems")
+    print("\n[cyan]📌 Column problems[/cyan]")
     print(f"- Column with NaN/Inf/invalid: {len(nan_inf_df[nan_inf_df['invalid_ratio'] > 0])}")
     for _, r in nan_inf_df.sort_values("invalid_ratio", ascending=False).head(10).iterrows():
         print(
@@ -171,7 +203,7 @@ def main():
     else:
         print("- Similar feature pairs: none")
 
-    print("\n📌 Row problems")
+    print("\n[cyan]📌 Row problems[/cyan]")
     invalid_row_count = int(row_df["has_invalid_numeric"].sum()) if len(row_df) else 0
     print(f"- Problematic rows (NaN/Inf): {invalid_row_count}/{len(df)}")
     print(f"- Severity row: {row_severity:.3f}")
@@ -181,7 +213,7 @@ def main():
             f"invalid={bool(r['has_invalid_numeric'])}"
         )
 
-    print("\n📌 Distribution / interpretation")
+    print("\n[cyan]📌 Distribution and interpretation[/cyan]")
     print("- High entropy means the distribution is more even/complex; it's not automatically 'noise', it can also be multimodal.")
     print("- High spread score means the data is more dispersed robustly compared to its central tendency.")
     print("\n  Top entropy:")
@@ -198,21 +230,22 @@ def main():
             f"({r['spread_label']}), var={r['variance']:.3f}, iqr={r['iqr']:.3f}"
         )
     
-    print(f"\n📌 Structure")
+    print(f"\n[cyan]📌 Structure[/cyan]")
     print(f"- VIF mean (normalized): {vif['mean']:.3f}")
     print(f"- VIF per-feature")
     for c in numeric_cols:
         print(f"  - {c}: VIF={vif['per_feature'][c]:.3f}")
     print(f"- sparsity: {sparsity:.3f}")
-    print(f"- class override ratio: {override_rat:.3f}")
+    print(f"- class imbalance ratio: {imbalance_rat:.3f} | label={Help._label_from_score(imbalance_rat)}")
+    print(f"- class override ratio: {override_rat:.3f} | label={Help._label_from_score(override_rat)}")
 
-    print("\n📌 Normality")
+    print("\n[cyan]📌 Normality[/cyan]")
     print("- Shapiro-wilk and KS test score per-feature:")
     for c in numeric_cols:
         print(f"  - {c}: Shapiro={shapiro[c]:.3f} | KS={ks[c]:.3f}")
-    print(f"- normality score (based on skewness and kurtosis): {normality:.3f}")
+    print(f"- normality score (based on skewness and kurtosis): {normality:.3f} | label={Help._label_from_score(normality, toplow=True)}")
 
-    print("\n🧼 Cleanineess status")
+    print("\n[cyan]🧼 Cleanineess status[/cyan]")
     print(f"- cleanliness score: {cleanliness.overall:.3f} / 1.000")
     print(f"- cleanliness label: {cleanliness.label}")
     print(f"- missing severity: {cleanliness.missing_severity:.3f}")
@@ -220,6 +253,8 @@ def main():
     print(f"- similarity severity: {cleanliness.similarity_severity:.3f}")
     print(f"- row severity: {cleanliness.row_severity:.3f}")
 
-    print("\n📊 Dataset-level distribution summary")
+    print("\n[cyan]📊 Dataset-level distribution summary[/cyan]")
     print(f"- avg entropy: {dist_df['entropy'].mean():.3f}")
     print(f"- avg spread score: {dist_df['spread_score'].mean():.3f}")
+    
+    print(f"\n⏱️ Elapsed time: {time.time() - elapsed:.2f} seconds (including plot visualization)")

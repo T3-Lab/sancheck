@@ -5,6 +5,8 @@ import math
 from scipy import stats
 from scipy.stats import skew, kurtosis
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.preprocessing import LabelEncoder
+import warnings
 
 # =============================
 # Distribution analysis
@@ -100,6 +102,36 @@ def class_override_ratio(df: pd.DataFrame, numeric_cols: list[str], target: str)
         return 0.0
 
     return conflict / total
+
+def class_imbalance_ratio(df: pd.DataFrame, target: str):
+    unique_classes = df[target].dropna().unique()
+    if len(unique_classes) <= 1:
+        return 0.0
+    
+    if len(unique_classes) > 100:
+        warnings.warn(f"⚠️ Too many unique classes in target ({len(unique_classes)}), imbalance ratio may be less meaningful.", UserWarning)
+        status = input("Continue with imbalance ratio calculation? (y/n): ").strip().lower()
+        if status == 'n':
+            return 0.0
+
+        elif status == 'y':
+            print("Continuing with imbalance ratio calculation...")
+        
+        else:
+            print("Invalid input, skipping imbalance ratio calculation.")
+            return 0.0
+
+    y = df[target].dropna().to_numpy()
+    le = LabelEncoder()
+    y = le.fit_transform(y)
+
+    max_label = y.max() if len(y) > 0 else 0
+    counts = np.bincount(y, minlength=max_label + 1)
+    probs = counts / len(y)
+    gini = 1.0 - np.sum(probs ** 2)
+    balance_rat = gini / (1 - 1 / len(unique_classes))
+    
+    return 1.0 - balance_rat
 
 # =============================
 # Column problems

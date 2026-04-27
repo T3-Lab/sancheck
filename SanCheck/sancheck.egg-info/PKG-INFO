@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: sancheck
-Version: 0.1.2
+Version: 0.1.3
 Summary: Minimal-tuning CLI tool for data stats and clarity checks
 Author: Nexo-kun
 License: MIT
