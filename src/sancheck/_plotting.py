@@ -77,6 +77,8 @@ def plots(df: pd.DataFrame, n_slice: int, download_plot: bool = False):
     for start in range(0, len(cols), n_slice):
         chunk_cols = cols[start:start + n_slice]
         chunk_df = df[chunk_cols]
+        if chunk_df.empty or chunk_df.shape[1] < 2:
+            continue
         title_suffix = f"(features {start + 1}-{start + len(chunk_cols)})"
         plot_numeric_boxplot(chunk_df, chunk_cols, title_suffix=title_suffix, download_plot=download_plot)
         plot_numeric_heatmap(chunk_df, chunk_cols, title_suffix=title_suffix, download_plot=download_plot)

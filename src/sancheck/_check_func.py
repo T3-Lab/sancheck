@@ -260,9 +260,15 @@ def compute_vif(df: pd.DataFrame, numeric_cols: list[str]):
           return 0.0
       
       vif_scores = []
-      for i in range(df.shape[1]):
-          vif_scores.append(variance_inflation_factor(df.values, i))
-      
+      with warnings.catch_warnings():
+            warnings.filterwarnings("error", category=RuntimeWarning)
+            
+            for i in range(df.shape[1]):
+                try:
+                    vif_scores.append(variance_inflation_factor(df.values, i))
+                except RuntimeWarning:
+                    vif_scores.append(float('inf'))
+
       raw = np.mean(vif_scores)
       norm_vif = 1 - np.tanh(raw / 10)
 

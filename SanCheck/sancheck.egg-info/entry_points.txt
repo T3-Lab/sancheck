@@ -1,2 +1,0 @@
-[console_scripts]
-sancheck = SanCheck.__main__:main

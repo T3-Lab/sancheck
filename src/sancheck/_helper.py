@@ -1,6 +1,7 @@
 import argparse
 import pandas as pd
 import numpy as np
+import json
 
 def parse_slice_arg(value: str):
     value = str(value).strip().lower()
@@ -38,25 +39,36 @@ def _to_numeric_with_mask(series: pd.Series):
     return coerced, finite_mask, nan_mask, bad_parse_mask
 
 
-def _label_from_score(score: float, toplow=False) -> str:
-    if toplow:
-        if score >= 0.75:
-            return "[green]very high[/green]"
-        if score >= 0.50:
-            return "[yellow]high[/yellow]"
-        if score >= 0.25:
-            return "[orange1]low[/orange1]"
-        return "[red]very low[/red]"
-    
+def _label_from_score(score: float, ascending=False, no_color=False) -> str:
+    if not no_color:
+        if ascending:
+            if score >= 0.75:
+                return "[green]very high[/green]"
+            if score >= 0.50:
+                return "[yellow]high[/yellow]"
+            if score >= 0.25:
+                return "[orange1]low[/orange1]"
+            return "[red]very low[/red]"
+        
+        else:
+            if score < 0.25:
+                return "[green]low[/green]"
+            if score < 0.50:
+                return "[yellow]medium[/yellow]"
+            if score < 0.75:
+                return "[orange1]high[/orange1]"
+            return "[red]very high[/red]"
+        
     else:
-        if score < 0.25:
-            return "[green]low[/green]"
-        if score < 0.50:
-            return "[yellow]medium[/yellow]"
-        if score < 0.75:
-            return "[orange1]high[/orange1]"
-        return "[red]very high[/red]"
+        if score >= 0.75:
+            return "very high"
+        if score >= 0.50:
+            return "high"
+        if score >= 0.25:
+            return "low"
+        return "very low"
     
+
 class InfoAction(argparse.Action):
     def __init__(self, option_strings, dest, nargs=0, **kwargs):
         super().__init__(option_strings, dest, nargs=nargs, **kwargs)
@@ -65,3 +77,9 @@ class InfoAction(argparse.Action):
         from . import _info as Info
         Info.metrics()
         parser.exit()
+
+class ReportEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, pd.DataFrame):
+            return obj.to_dict(orient="records")
+        return super().default(obj)

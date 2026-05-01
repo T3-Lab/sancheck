@@ -1,4 +1,4 @@
-# SanCheck a.k.a Sanity Check
+# SanCheck (Sanity Check)
 
 `Sanity Check` is a program that helps provide a statistical overview of data, including several things such as multicollinearity via VIF (Variance Inflation Factor), invalid value ratio, etc. The SanCheck project was created to address the inefficiency of repetitive preprocessing tasks in machine learning. The main objective of SanCheck is to provide a statistical overview of the data as it is without cleaning or outputting transformed input data.
 
@@ -43,3 +43,5 @@ The metrics checked by SanCheck are as follows:
 - **--no-plot**: Skip plotting (overrides --download-plot).
 
 - **--metrics-info**: Show detailed explanation of metrics.
+
+- **--get-json**: Output the report as JSON instead of printing to console.
